@@ -74,8 +74,12 @@ music.volume = 0.8;
 let audioCtx = null, analyser = null, samples = null;
 let avgLevel = 0, lastBeatAt = 0, silentFor = 0, useMetronome = false, lastMetroBeat = -1;
 
-function startMusic() {
-  if (!audioCtx) {
+/**
+ * Вмикає музику. withAnalyser=false — спроба одразу при відкритті сторінки:
+ * без аналізатора звуку, бо до першого натискання браузер його не запускає.
+ */
+function startMusic(withAnalyser = true) {
+  if (withAnalyser && !audioCtx) {
     try {
       audioCtx = new (window.AudioContext || window.webkitAudioContext)();
       const src = audioCtx.createMediaElementSource(music);
@@ -89,10 +93,21 @@ function startMusic() {
     }
   }
   if (audioCtx && audioCtx.state === "suspended") audioCtx.resume();
-  music.play().catch(() => {});
+  music.play().then(updateSoundHint, updateSoundHint);
 }
 
-function stopMusic() { music.pause(); }
+function stopMusic() { music.pause(); updateSoundHint(); }
+
+/** Підказка «натисни, щоб увімкнути музику», поки браузер не дав грати звук. */
+function updateSoundHint() {
+  $("sound-hint").hidden = !music.paused || !$("bye").hidden;
+}
+
+/** Перше натискання будь-де вмикає музику (і аналізатор біту). */
+function unlockMusic() {
+  if (!$("bye").hidden) return;              // на екрані «Бувай» музика вимкнена навмисно
+  if (music.paused || !audioCtx) startMusic();
+}
 
 /** Повертає true на ударі барабана: гучність різко вища за середню. */
 function detectBeat(dt) {
@@ -104,6 +119,7 @@ function detectBeat(dt) {
     if (beat !== lastMetroBeat) { lastMetroBeat = beat; return true; }
     return false;
   }
+  if (!analyser) return false;
 
   analyser.getFloatTimeDomainData(samples);
   let sum = 0;
@@ -366,6 +382,11 @@ function wire() {
     show("records");
   });
 
+  document.addEventListener("pointerdown", unlockMusic, true);
+  document.addEventListener("keydown", unlockMusic, true);
+  music.addEventListener("play", updateSoundHint);
+  music.addEventListener("pause", updateSoundHint);
+
   document.addEventListener("keydown", (e) => {
     if (e.target instanceof HTMLInputElement) return;
     if (e.key === "Escape" && !$("play").hidden) show("menu");
@@ -377,4 +398,5 @@ buildLevelChips();
 buildRecordTabs();
 wire();
 show("menu");
+startMusic(false);   // музика з меню, якщо браузер дозволить; інакше — з першого натискання
 requestAnimationFrame(frame);

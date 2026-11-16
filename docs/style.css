@@ -200,6 +200,16 @@ body {
 .records .num { text-align: right; font-variant-numeric: tabular-nums; font-family: var(--font-display); }
 .records tr.mine td { color: #ffd23f; }
 .records .empty { text-align: center; color: var(--ink-dim); padding: 18px 8px; }
+.sound-hint {
+  margin: 0;
+  font-weight: 700;
+  font-size: clamp(12px, 1.4cqw, 14px);
+  color: var(--neon);
+  animation: pulse 1.6s ease-in-out infinite;
+}
+@keyframes pulse { 50% { opacity: 0.45; } }
+@media (prefers-reduced-motion: reduce) { .sound-hint { animation: none; } }
+
 .note { margin: 0; font-size: 12px; color: var(--ink-dim); }
 
 @media (prefers-reduced-motion: reduce) {
