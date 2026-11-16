@@ -26,8 +26,10 @@ python3 -m http.server 8000
 
 ## Таблиця рекордів
 
-Рекорди зберігаються в браузері кожного гравця (localStorage), тобто кожен бачить свої.
-Для спільної таблиці на всіх потрібна база даних (наприклад, Supabase або Firebase).
+На Vercel таблиця спільна для всіх гравців. Її зберігає серверна функція `api/records.js` у базі Upstash Redis.
+Щоб це запрацювало, у проєкті на Vercel відкрий **Storage**, натисни **Create Database**, вибери **Upstash Redis** (план Free) і підключи базу до проєкту, а потім зроби **Redeploy**.
+
+Без бази (локально або на GitHub Pages) рекорди зберігаються в браузері кожного гравця.
 
 ## Файли
 
@@ -36,6 +38,7 @@ python3 -m http.server 8000
 | `index.html` | Екрани: меню, гра, рекорди, вихід |
 | `style.css` | Вигляд |
 | `game.js` | Логіка гри, рух у біт, таймер, рекорди |
+| `api/records.js` | Сервер спільної таблиці рекордів (Vercel + Upstash Redis) |
 | `assets/background.jpg` | Фон зі скелетом |
 | `assets/music.mp3` | Трек «Baboons» (Coma Svensson, Epidemic Sound) |
 | `assets/icon.png` | Іконка вкладки |

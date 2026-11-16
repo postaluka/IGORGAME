@@ -61,8 +61,9 @@
             <label for="player-name">Твоє ім'я для таблиці</label>
             <div class="save-row">
               <input id="player-name" maxlength="16" autocomplete="nickname" required>
-              <button class="btn btn-go small" type="submit">Зберегти</button>
+              <button id="save-btn" class="btn btn-go small" type="submit">Зберегти</button>
             </div>
+            <p id="save-error" class="save-error" role="alert" hidden></p>
           </form>
           <div class="menu-buttons row">
             <button id="res-again" class="btn btn-go small">Ще раз</button>
@@ -84,7 +85,7 @@
             <tbody id="record-rows"></tbody>
           </table>
         </div>
-        <p class="note">Рекорди зберігаються в цьому браузері.</p>
+        <p id="records-note" class="note">Рекорди зберігаються в цьому браузері.</p>
         <button id="rec-back" class="btn btn-alt small">Назад</button>
       </div>
     </section>

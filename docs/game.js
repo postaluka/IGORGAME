@@ -165,6 +165,7 @@ function startGame() {
 }
 
 function newRound() {
+  fetchShared();   // щоб місце в таблиці рахувалось за свіжими даними
   typed = [];
   over = false;
   $("result").hidden = true;
@@ -246,6 +247,7 @@ function finish() {
       ? `Час ${finalTime.toFixed(2)} с, рівень «${level.name}». Це ${place}-е місце в таблиці!`
       : `Час ${finalTime.toFixed(2)} с, рівень «${level.name}». До таблиці рекордів не вистачило швидкості.`;
     $("save-form").hidden = !place;
+    $("save-error").hidden = true;
     $("player-name").value = load(NAME_KEY, "");
   } else {
     title.textContent = "Ти програв!";
@@ -261,8 +263,35 @@ function finish() {
 }
 
 // ---------- Таблиця рекордів ----------
-function allRecords() { return load(RECORDS_KEY, {}); }
-function levelRecords(id) { return (allRecords()[id] || []).slice().sort((a, b) => a.time - b.time); }
+// Спільна таблиця живе на сервері (/api/records на Vercel).
+// Якщо сервер недоступний (локальний запуск, GitHub Pages), рекорди зберігаються в цьому браузері.
+const API = "api/records";
+let shared = null;          // {easy: [...], ...} із сервера, або null
+let sharedLoading = null;
+
+function localRecords() { return load(RECORDS_KEY, {}); }
+function levelRecords(id) {
+  const src = shared || localRecords();
+  return (src[id] || []).slice().sort((a, b) => a.time - b.time);
+}
+
+async function fetchShared() {
+  if (sharedLoading) return sharedLoading;
+  sharedLoading = (async () => {
+    try {
+      const r = await fetch(API, { cache: "no-store" });
+      if (!r.ok) throw new Error(String(r.status));
+      const data = await r.json();
+      if (!data || typeof data !== "object" || !Array.isArray(data[LEVELS[0].id])) throw new Error("bad data");
+      shared = data;
+    } catch {
+      shared = null;
+    }
+    updateRecordsNote();
+    sharedLoading = null;
+  })();
+  return sharedLoading;
+}
 
 /** Яке місце займе цей час (1…10), або 0 якщо не потрапляє. */
 function placeFor(time) {
@@ -272,13 +301,53 @@ function placeFor(time) {
   return place <= MAX_RECORDS ? place : 0;
 }
 
-function saveRecord(name) {
-  const all = allRecords();
-  const entry = { name, time: Math.round(finalTime * 100) / 100, date: new Date().toISOString(), id: Date.now() };
+function saveLocal(name, time) {
+  const all = localRecords();
+  const entry = { name, time, date: new Date().toISOString(), id: Date.now() };
   all[level.id] = (all[level.id] || []).concat(entry).sort((a, b) => a.time - b.time).slice(0, MAX_RECORDS);
   save(RECORDS_KEY, all);
+  return entry.id;
+}
+
+/** Зберігає результат: на сервер, а якщо не вийшло — у браузер. Повертає текст помилки або "". */
+async function saveRecord(name) {
+  const time = Math.round(finalTime * 100) / 100;
   save(NAME_KEY, name);
-  lastSaved = entry.id;
+  if (shared) {
+    try {
+      const r = await fetch(API, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ level: level.id, name, time }),
+      });
+      const data = await r.json().catch(() => ({}));
+      if (r.ok && Array.isArray(data.list)) {
+        shared[level.id] = data.list;
+        lastSaved = data.id;
+        return "";
+      }
+      if (r.status === 400 || r.status === 429) return data.error || "Сервер не прийняв результат";
+    } catch { /* нижче збережемо локально */ }
+    shared = null;
+    updateRecordsNote();
+  }
+  lastSaved = saveLocal(name, time);
+  return "";
+}
+
+function updateRecordsNote() {
+  $("records-note").textContent = shared
+    ? "Спільна таблиця для всіх гравців."
+    : "Рекорди зберігаються в цьому браузері.";
+}
+
+async function openRecords() {
+  returnTo = "menu";
+  recordsLevel = level.id;
+  renderRecords();
+  show("records");
+  await fetchShared();
+  if (!$("records").hidden) renderRecords();
 }
 
 function buildRecordTabs() {
@@ -359,7 +428,7 @@ function frame(now) {
 // ---------- Кнопки ----------
 function wire() {
   $("btn-start").addEventListener("click", startGame);
-  $("btn-records").addEventListener("click", () => { returnTo = "menu"; recordsLevel = level.id; renderRecords(); show("records"); });
+  $("btn-records").addEventListener("click", openRecords);
   $("btn-exit").addEventListener("click", () => { stopMusic(); show("bye"); });
   $("btn-back").addEventListener("click", () => { show("menu"); startMusic(); });
 
@@ -367,14 +436,23 @@ function wire() {
   $("btn-menu").addEventListener("click", () => show("menu"));
   $("res-again").addEventListener("click", newRound);
   $("res-menu").addEventListener("click", () => show("menu"));
-  $("res-records").addEventListener("click", () => { returnTo = "menu"; recordsLevel = level.id; renderRecords(); show("records"); });
+  $("res-records").addEventListener("click", openRecords);
   $("rec-back").addEventListener("click", () => show(returnTo));
 
-  $("save-form").addEventListener("submit", (e) => {
+  $("save-form").addEventListener("submit", async (e) => {
     e.preventDefault();
     const name = $("player-name").value.trim().slice(0, 16);
     if (!name) return;
-    saveRecord(name);
+    const btn = $("save-btn");
+    btn.disabled = true;
+    $("save-error").hidden = true;
+    const err = await saveRecord(name);
+    btn.disabled = false;
+    if (err) {
+      $("save-error").textContent = err;
+      $("save-error").hidden = false;
+      return;
+    }
     $("save-form").hidden = true;
     returnTo = "menu";
     recordsLevel = level.id;
@@ -397,6 +475,8 @@ function wire() {
 buildLevelChips();
 buildRecordTabs();
 wire();
+updateRecordsNote();
+fetchShared();
 show("menu");
 startMusic(false);   // музика з меню, якщо браузер дозволить; інакше — з першого натискання
 requestAnimationFrame(frame);
