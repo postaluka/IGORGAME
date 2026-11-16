@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="uk">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Гра ІГОР</title>
+  <meta name="description" content="Влуч мишкою по літерах, що літають у біт музики, і склади слово ІГОР на час.">
+  <link rel="icon" href="assets/icon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Russo+One&family=Rubik:wght@500;700&display=swap">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main id="stage">
+    <!-- Меню -->
+    <section id="menu" class="screen">
+      <div class="panel">
+        <h1 class="logo">ІГОР</h1>
+        <p class="sub">Влуч по літерах у правильному порядку. Вони стрибають у біт!</p>
+
+        <p class="label">Рівень складності</p>
+        <div id="levels" class="levels" role="radiogroup" aria-label="Рівень складності"></div>
+
+        <div class="menu-buttons">
+          <button id="btn-start" class="btn btn-go">Старт</button>
+          <button id="btn-records" class="btn btn-alt">Рекорди</button>
+          <button id="btn-exit" class="btn btn-stop">Exit</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Гра -->
+    <section id="play" class="screen" hidden>
+      <header class="hud">
+        <div class="hud-side"><span class="hud-label">Рівень</span><span id="hud-level"></span></div>
+        <div class="hud-center">
+          <p class="hud-title">Напиши ІГОР!</p>
+          <p id="typed" class="typed">_ _ _ _</p>
+        </div>
+        <div class="hud-side right"><span class="hud-label">Час</span><span id="timer" class="timer">0.0</span></div>
+      </header>
+
+      <div id="field" class="field"></div>
+
+      <footer class="bar">
+        <p id="status" class="status" aria-live="polite"></p>
+        <div class="bar-buttons">
+          <button id="btn-again" class="btn btn-go small">Ще раз</button>
+          <button id="btn-menu" class="btn btn-alt small">Меню</button>
+        </div>
+      </footer>
+
+      <!-- Результат раунду -->
+      <div id="result" class="overlay" hidden>
+        <div class="panel">
+          <h2 id="result-title" class="result-title"></h2>
+          <p id="result-text" class="sub"></p>
+          <form id="save-form" class="save-form" hidden>
+            <label for="player-name">Твоє ім'я для таблиці</label>
+            <div class="save-row">
+              <input id="player-name" maxlength="16" autocomplete="nickname" required>
+              <button class="btn btn-go small" type="submit">Зберегти</button>
+            </div>
+          </form>
+          <div class="menu-buttons row">
+            <button id="res-again" class="btn btn-go small">Ще раз</button>
+            <button id="res-records" class="btn btn-alt small">Рекорди</button>
+            <button id="res-menu" class="btn btn-alt small">Меню</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Таблиця результатів -->
+    <section id="records" class="screen" hidden>
+      <div class="panel wide">
+        <h2 class="result-title">Таблиця рекордів</h2>
+        <div id="record-tabs" class="levels" role="tablist"></div>
+        <div class="table-wrap">
+          <table class="records">
+            <thead><tr><th>#</th><th>Гравець</th><th class="num">Час</th><th>Дата</th></tr></thead>
+            <tbody id="record-rows"></tbody>
+          </table>
+        </div>
+        <p class="note">Рекорди зберігаються в цьому браузері.</p>
+        <button id="rec-back" class="btn btn-alt small">Назад</button>
+      </div>
+    </section>
+
+    <!-- Вихід -->
+    <section id="bye" class="screen" hidden>
+      <div class="panel">
+        <h2 class="logo small">Бувай!</h2>
+        <p class="sub">Музику вимкнено. Можеш закрити вкладку.</p>
+        <button id="btn-back" class="btn btn-go">Повернутися в гру</button>
+      </div>
+    </section>
+  </main>
+
+  <audio id="music" src="assets/music.mp3" loop preload="auto"></audio>
+  <script src="game.js"></script>
+</body>
+</html>
